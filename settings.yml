@@ -1,2 +1,6 @@
-example_setting:
+contact_group:
+  default: moderators
+show_for_admins:
+  default: true
+show_for_moderators:
   default: true
