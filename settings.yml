@@ -1,6 +1,31 @@
-contact_group:
-  default: moderators
-show_for_admins:
-  default: true
-show_for_moderators:
-  default: true
+contact_pm_routes:
+  type: objects
+  default:
+    - name: staff
+      staff: true
+      contact_group: moderators
+  schema:
+    name: contact_pm_route
+    identifier: name
+    properties:
+      name:
+        type: string
+        required: true
+        validations:
+          min_length: 1
+      username:
+        type: string
+      staff:
+        type: boolean
+        default: false
+      admins:
+        type: boolean
+        default: false
+      moderators:
+        type: boolean
+        default: false
+      contact_group:
+        type: string
+        required: true
+        validations:
+          min_length: 1

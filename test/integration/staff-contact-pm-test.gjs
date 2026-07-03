@@ -9,6 +9,7 @@ import StaffContactPm from "../../discourse/components/staff-contact-pm";
 
 const ADMIN = {
   username: "admin",
+  staff: true,
   admin: true,
   moderator: false,
   can_send_private_message_to_user: false,
@@ -16,6 +17,7 @@ const ADMIN = {
 
 const MODERATOR = {
   username: "moderator",
+  staff: true,
   admin: false,
   moderator: true,
   can_send_private_message_to_user: false,
@@ -23,6 +25,15 @@ const MODERATOR = {
 
 const USER = {
   username: "member",
+  staff: false,
+  admin: false,
+  moderator: false,
+  can_send_private_message_to_user: false,
+};
+
+const SUPPORT_USER = {
+  username: "support_user",
+  staff: false,
   admin: false,
   moderator: false,
   can_send_private_message_to_user: false,
@@ -38,9 +49,9 @@ module("Integration | Component | staff-contact-pm", function (hooks) {
   setupRenderingTest(hooks);
 
   hooks.beforeEach(function () {
-    settings.contact_group = "moderators";
-    settings.show_for_admins = true;
-    settings.show_for_moderators = true;
+    settings.contact_pm_routes = [
+      { name: "staff", staff: true, contact_group: "moderators" },
+    ];
 
     this.owner.register("service:composer", ComposerStub);
   });
@@ -67,7 +78,13 @@ module("Integration | Component | staff-contact-pm", function (hooks) {
   });
 
   test("opens a PM to the configured contact group", async function (assert) {
-    settings.contact_group = "staff_contact";
+    settings.contact_pm_routes = [
+      {
+        name: "moderators",
+        moderators: true,
+        contact_group: "staff_contact",
+      },
+    ];
     this.user = MODERATOR;
 
     await render(<template><StaffContactPm @user={{this.user}} /></template>);
@@ -75,6 +92,74 @@ module("Integration | Component | staff-contact-pm", function (hooks) {
 
     assert.deepEqual(this.owner.lookup("service:composer").options, {
       recipients: "staff_contact",
+      hasGroups: true,
+    });
+  });
+
+  test("renders for a configured non-staff username", async function (assert) {
+    settings.contact_pm_routes = [
+      {
+        name: "support",
+        username: "support_user",
+        contact_group: "support",
+      },
+    ];
+    this.user = SUPPORT_USER;
+
+    await render(<template><StaffContactPm @user={{this.user}} /></template>);
+
+    assert.dom(".staff-contact-pm__button").exists();
+  });
+
+  test("matches configured usernames case-insensitively", async function (assert) {
+    settings.contact_pm_routes = [
+      {
+        name: "support",
+        username: "Support_User",
+        contact_group: "support",
+      },
+    ];
+    this.user = SUPPORT_USER;
+
+    await render(<template><StaffContactPm @user={{this.user}} /></template>);
+
+    assert.dom(".staff-contact-pm__button").exists();
+  });
+
+  test("opens a PM to a configured non-staff user's contact group", async function (assert) {
+    settings.contact_pm_routes = [
+      {
+        name: "support",
+        username: "support_user",
+        contact_group: "support",
+      },
+    ];
+    this.user = SUPPORT_USER;
+
+    await render(<template><StaffContactPm @user={{this.user}} /></template>);
+    await click(".staff-contact-pm__button");
+
+    assert.deepEqual(this.owner.lookup("service:composer").options, {
+      recipients: "support",
+      hasGroups: true,
+    });
+  });
+
+  test("supports serialized object settings", async function (assert) {
+    settings.contact_pm_routes = JSON.stringify([
+      {
+        name: "support",
+        username: "support_user",
+        contact_group: "support",
+      },
+    ]);
+    this.user = SUPPORT_USER;
+
+    await render(<template><StaffContactPm @user={{this.user}} /></template>);
+    await click(".staff-contact-pm__button");
+
+    assert.deepEqual(this.owner.lookup("service:composer").options, {
+      recipients: "support",
       hasGroups: true,
     });
   });
@@ -113,7 +198,9 @@ module("Integration | Component | staff-contact-pm", function (hooks) {
   });
 
   test("does not render when the matching staff role is disabled", async function (assert) {
-    settings.show_for_moderators = false;
+    settings.contact_pm_routes = [
+      { name: "admins", admins: true, contact_group: "admins" },
+    ];
     this.user = MODERATOR;
 
     await render(<template><StaffContactPm @user={{this.user}} /></template>);
@@ -122,7 +209,9 @@ module("Integration | Component | staff-contact-pm", function (hooks) {
   });
 
   test("does not render without a contact group", async function (assert) {
-    settings.contact_group = "   ";
+    settings.contact_pm_routes = [
+      { name: "blank", moderators: true, contact_group: "   " },
+    ];
     this.user = MODERATOR;
 
     await render(<template><StaffContactPm @user={{this.user}} /></template>);
@@ -152,9 +241,9 @@ module(
     setupRenderingTest(hooks, { anonymous: true });
 
     hooks.beforeEach(function () {
-      settings.contact_group = "moderators";
-      settings.show_for_admins = true;
-      settings.show_for_moderators = true;
+      settings.contact_pm_routes = [
+        { name: "staff", staff: true, contact_group: "moderators" },
+      ];
     });
 
     test("does not render for anonymous visitors", async function (assert) {
