@@ -42,47 +42,46 @@ function matchingRouteForUser(user) {
 }
 
 export default class StaffContactPm extends Component {
-  static shouldRender(outletArgs, helper) {
-    const contactGroup = matchingRouteForUser(
-      outletArgs.user
-    )?.contact_group?.trim();
+  @service composer;
+  @service currentUser;
 
-    return (
-      helper.currentUser &&
-      contactGroup &&
-      !outletArgs.user?.can_send_private_message_to_user
-    );
+  get matchingRoute() {
+    return matchingRouteForUser(this.args.user);
   }
 
-  @service composer;
+  get contactGroup() {
+    return this.matchingRoute?.contact_group?.trim();
+  }
 
-  matchingRoute;
-  contactGroup;
-
-  constructor() {
-    super(...arguments);
-
-    this.matchingRoute = matchingRouteForUser(this.args.user);
-    this.contactGroup = this.matchingRoute?.contact_group?.trim();
+  get shouldShow() {
+    return (
+      this.currentUser &&
+      this.contactGroup &&
+      !this.args.user?.can_send_private_message_to_user
+    );
   }
 
   @action
   composeMessage() {
+    const recipients = this.contactGroup;
+
     this.args.close?.();
     this.composer.openNewMessage({
-      recipients: this.contactGroup,
+      recipients,
       hasGroups: true,
     });
   }
 
   <template>
-    <li class="staff-contact-pm__item">
-      <DButton
-        @action={{this.composeMessage}}
-        @icon="envelope"
-        @label="user.private_message"
-        class="btn-primary staff-contact-pm__button"
-      />
-    </li>
+    {{#if this.shouldShow}}
+      <li class="staff-contact-pm__item">
+        <DButton
+          @action={{this.composeMessage}}
+          @icon="envelope"
+          @label="user.private_message"
+          class="btn-primary staff-contact-pm__button"
+        />
+      </li>
+    {{/if}}
   </template>
 }

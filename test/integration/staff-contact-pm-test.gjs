@@ -96,6 +96,48 @@ module("Integration | Component | staff-contact-pm", function (hooks) {
     });
   });
 
+  test("opens a PM for a configured admins-only route", async function (assert) {
+    settings.contact_pm_routes = [
+      { name: "admins", admins: true, contact_group: "admins" },
+    ];
+    this.user = ADMIN;
+
+    await render(<template><StaffContactPm @user={{this.user}} /></template>);
+    await click(".staff-contact-pm__button");
+
+    assert.deepEqual(this.owner.lookup("service:composer").options, {
+      recipients: "admins",
+      hasGroups: true,
+    });
+  });
+
+  test("does not match an admins-only route for a non-admin staff user", async function (assert) {
+    settings.contact_pm_routes = [
+      { name: "admins", admins: true, contact_group: "admins" },
+    ];
+    this.user = MODERATOR;
+
+    await render(<template><StaffContactPm @user={{this.user}} /></template>);
+
+    assert.dom(".staff-contact-pm__button").doesNotExist();
+  });
+
+  test("uses the first matching route when several routes could match", async function (assert) {
+    settings.contact_pm_routes = [
+      { name: "support", username: "support_user", contact_group: "support" },
+      { name: "staff", staff: true, contact_group: "moderators" },
+    ];
+    this.user = SUPPORT_USER;
+
+    await render(<template><StaffContactPm @user={{this.user}} /></template>);
+    await click(".staff-contact-pm__button");
+
+    assert.deepEqual(this.owner.lookup("service:composer").options, {
+      recipients: "support",
+      hasGroups: true,
+    });
+  });
+
   test("renders for a configured non-staff username", async function (assert) {
     settings.contact_pm_routes = [
       {
@@ -176,6 +218,27 @@ module("Integration | Component | staff-contact-pm", function (hooks) {
     await click(".staff-contact-pm__button");
 
     assert.verifySteps(["closed"]);
+  });
+
+  test("still opens a PM to the resolved contact group after closing clears the outlet's user arg", async function (assert) {
+    // The real user-card-contents component's `close` action sets its
+    // `user` to null, which flows back down through `@outletArgs.user`.
+    this.user = MODERATOR;
+    this.close = () => {
+      this.user = null;
+    };
+
+    await render(
+      <template>
+        <StaffContactPm @user={{this.user}} @close={{this.close}} />
+      </template>
+    );
+    await click(".staff-contact-pm__button");
+
+    assert.deepEqual(this.owner.lookup("service:composer").options, {
+      recipients: "moderators",
+      hasGroups: true,
+    });
   });
 
   test("does not render for regular user cards", async function (assert) {
