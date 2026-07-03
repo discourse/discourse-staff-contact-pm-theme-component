@@ -18,51 +18,57 @@ function routesSetting() {
   }
 }
 
-export default class StaffContactPm extends Component {
-  @service composer;
-  @service currentUser;
+function matchingRouteForUser(user) {
+  const routes = routesSetting();
 
-  get matchingRoute() {
-    const user = this.args.user;
-    const routes = routesSetting();
+  return routes.find((route) => {
+    const contactGroup = route.contact_group?.trim();
+    if (!contactGroup) {
+      return false;
+    }
 
-    return routes.find((route) => {
-      const contactGroup = route.contact_group?.trim();
-
-      if (!contactGroup) {
-        return false;
-      }
-
-      if (route.username?.trim()) {
-        return (
-          route.username.trim().toLowerCase() === user?.username?.toLowerCase()
-        );
-      }
-
+    if (route.username?.trim()) {
       return (
-        (route.staff && user?.staff) ||
-        (route.admins && user?.admin) ||
-        (route.moderators && user?.moderator)
+        route.username.trim().toLowerCase() === user?.username?.toLowerCase()
       );
-    });
-  }
+    }
 
-  get contactGroup() {
-    return this.matchingRoute?.contact_group?.trim();
-  }
-
-  get shouldShow() {
     return (
-      this.currentUser &&
-      this.contactGroup &&
-      !this.args.user?.can_send_private_message_to_user
+      (route.staff && user?.staff) ||
+      (route.admins && user?.admin) ||
+      (route.moderators && user?.moderator)
     );
+  });
+}
+
+export default class StaffContactPm extends Component {
+  static shouldRender(outletArgs, helper) {
+    const contactGroup = matchingRouteForUser(
+      outletArgs.user
+    )?.contact_group?.trim();
+
+    return (
+      helper.currentUser &&
+      contactGroup &&
+      !outletArgs.user?.can_send_private_message_to_user
+    );
+  }
+
+  @service composer;
+
+  matchingRoute;
+  contactGroup;
+
+  constructor() {
+    super(...arguments);
+
+    this.matchingRoute = matchingRouteForUser(this.args.user);
+    this.contactGroup = this.matchingRoute?.contact_group?.trim();
   }
 
   @action
   composeMessage() {
     this.args.close?.();
-
     this.composer.openNewMessage({
       recipients: this.contactGroup,
       hasGroups: true,
@@ -70,15 +76,13 @@ export default class StaffContactPm extends Component {
   }
 
   <template>
-    {{#if this.shouldShow}}
-      <li class="staff-contact-pm__item">
-        <DButton
-          @action={{this.composeMessage}}
-          @icon="envelope"
-          @label="user.private_message"
-          class="btn-primary staff-contact-pm__button"
-        />
-      </li>
-    {{/if}}
+    <li class="staff-contact-pm__item">
+      <DButton
+        @action={{this.composeMessage}}
+        @icon="envelope"
+        @label="user.private_message"
+        class="btn-primary staff-contact-pm__button"
+      />
+    </li>
   </template>
 }
