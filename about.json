@@ -1,10 +1,9 @@
 {
-  "name": "/Users/grubba/Desktop/work/discourse/discourse-staff-contact-pm",
+  "name": "Contact PM",
   "component": true,
   "authors": "Discourse",
-  "about_url": "TODO: Put your theme's public repo or Meta topic URL here",
-  "license_url": "TODO: Put your theme's LICENSE URL here",
-  "learn_more": "TODO",
+  "about_url": "https://github.com/discourse/discourse-staff-contact-pm",
+  "license_url": "https://github.com/discourse/discourse-staff-contact-pm/blob/main/LICENSE",
   "theme_version": "0.0.1",
   "minimum_discourse_version": null,
   "maximum_discourse_version": null,

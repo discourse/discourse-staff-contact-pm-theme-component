@@ -1,5 +1,26 @@
 en:
   theme_metadata:
-    description: ''
+    description: "Adds a Message button to selected user cards that opens a PM to a configured contact group."
     settings:
-      example_setting: A description of a setting.
+      contact_pm_routes:
+        description: "User-card contact PM routes. Each route can match a specific username or a staff role, then open a PM to the configured group."
+        schema:
+          properties:
+            name:
+              label: "Name"
+              description: "Internal route name used to identify this contact route."
+            username:
+              label: "Username"
+              description: "Optional exact username to match. Use this for non-staff contact users."
+            staff:
+              label: "Staff"
+              description: "Match all staff users."
+            admins:
+              label: "Admins"
+              description: "Match admin users."
+            moderators:
+              label: "Moderators"
+              description: "Match moderator users."
+            contact_group:
+              label: "Contact group"
+              description: "Group username to receive the PM."
